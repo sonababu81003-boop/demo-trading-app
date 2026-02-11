@@ -2,27 +2,69 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Demo Trading</title>
+<title>Demo Trading Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{margin:0;font-family:Arial;background:#0f172a;color:white;text-align:center}
-header{background:#020617;padding:12px;font-weight:bold}
-.balance{padding:8px;color:#22c55e}
-.price{font-size:32px;margin:10px}
-button{padding:10px 14px;margin:5px;border:none;border-radius:6px;color:white}
-.buy{background:#16a34a}
-.sell{background:#dc2626}
-.invite{background:#2563eb}
-.reset{background:#9333ea}
-.lock{color:#f87171;font-weight:bold}
-.small{font-size:13px;color:#94a3b8}
-.hidden{display:none}
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0f172a;
+  color:white;
+  text-align:center;
+}
+header{
+  background:#020617;
+  padding:14px;
+  font-weight:bold;
+  font-size:18px;
+}
+.balance{
+  padding:10px;
+  font-size:18px;
+  color:#22c55e;
+}
+.price{
+  font-size:34px;
+  margin:10px;
+}
+button{
+  padding:12px 16px;
+  margin:6px;
+  border:none;
+  border-radius:8px;
+  font-size:15px;
+  color:white;
+  cursor:pointer;
+}
+.buy{background:#16a34a;}
+.sell{background:#dc2626;}
+.invite{background:#2563eb;}
+.lock{color:#f87171;font-weight:bold;}
+.message{
+  font-size:15px;
+  margin-top:8px;
+}
+.profit{color:#22c55e;}
+.loss{color:#ef4444;}
+.history{
+  margin-top:15px;
+  padding:10px;
+  background:#020617;
+  font-size:14px;
+}
+.history h3{
+  margin:5px 0;
+}
+.tradeItem{
+  margin:4px 0;
+}
+.hidden{display:none;}
 </style>
 </head>
 
 <body>
 
-<header>📊 DEMO TRADING (100% Demo Only)</header>
+<header>📊 DEMO TRADING PRO</header>
 
 <div class="balance" id="balance">Demo Balance: ₹10000</div>
 <div class="price" id="price">₹100.00</div>
@@ -30,21 +72,24 @@ button{padding:10px 14px;margin:5px;border:none;border-radius:6px;color:white}
 <button class="buy" onclick="trade('BUY')">BUY</button>
 <button class="sell" onclick="trade('SELL')">SELL</button>
 
-<div id="message" class="small">Market Running...</div>
+<div id="message" class="message">Market Running...</div>
 
 <div id="inviteSection" class="hidden">
   <p class="lock">Balance Finished!</p>
   <button class="invite" onclick="invite()">Invite Friend (Earn Demo)</button>
 </div>
 
-<button class="reset hidden" id="resetBtn" onclick="resetBalance()">Reset (Premium)</button>
+<div class="history">
+  <h3>Last Trades</h3>
+  <div id="tradeHistory"></div>
+</div>
 
 <script>
-let balance = 10000;
-let price = 100;
-let locked = false;
-let inviteCount = 0;
-let lastResetTime = 0;
+let balance=10000;
+let price=100;
+let locked=false;
+let inviteCount=0;
+let trades=[];
 
 setInterval(()=>{
   if(locked) return;
@@ -59,13 +104,20 @@ function trade(type){
    return;
  }
 
- let win = Math.random()>0.5;
- let amt = Math.floor(Math.random()*400)+200;
+ let win=Math.random()>0.5;
+ let amt=Math.floor(Math.random()*400)+200;
 
  balance += win?amt:-amt;
 
- document.getElementById("message").innerText =
-   type+" "+(win?"WIN +":"LOSS -")+"₹"+amt;
+ let msg=type+" "+(win?"WIN +":"LOSS -")+"₹"+amt;
+
+ document.getElementById("message").innerText=msg;
+ document.getElementById("message").className=
+   "message "+(win?"profit":"loss");
+
+ trades.unshift(msg);
+ if(trades.length>5) trades.pop();
+ updateHistory();
 
  if(balance<=0){
    balance=0;
@@ -80,9 +132,16 @@ function updateBalance(){
  document.getElementById("balance").innerText="Demo Balance: ₹"+balance;
 }
 
+function updateHistory(){
+ let html="";
+ trades.forEach(t=>{
+   html+="<div class='tradeItem'>"+t+"</div>";
+ });
+ document.getElementById("tradeHistory").innerHTML=html;
+}
+
 function invite(){
  inviteCount++;
-
  let reward;
  if(inviteCount==1) reward=5000;
  else if(inviteCount==2) reward=4000;
@@ -94,20 +153,8 @@ function invite(){
 
  document.getElementById("inviteSection").classList.add("hidden");
  document.getElementById("message").innerText="Referral Reward +₹"+reward;
+ document.getElementById("message").className="message profit";
 
- updateBalance();
-}
-
-function resetBalance(){
- let now = Date.now();
- if(now-lastResetTime<86400000){
-   alert("Reset allowed once in 24 hours");
-   return;
- }
- balance=10000;
- locked=false;
- lastResetTime=now;
- document.getElementById("inviteSection").classList.add("hidden");
  updateBalance();
 }
 </script>
