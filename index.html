@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Demo Trading App</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #fff;
+    }
+    header {
+      padding: 15px;
+      background: #020617;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .balance {
+      padding: 15px;
+      text-align: center;
+      background: #020617;
+      color: #22c55e;
+      font-size: 18px;
+    }
+    .chart {
+      height: 220px;
+      background: linear-gradient(180deg,#1e293b,#020617);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+    }
+    .trade-panel {
+      padding: 15px;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    button {
+      flex: 1;
+      padding: 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .buy {
+      background: #16a34a;
+      color: #fff;
+    }
+    .sell {
+      background: #dc2626;
+      color: #fff;
+    }
+    .info {
+      text-align: center;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<header>📊 DEMO TRADING</header>
+
+<div class="balance">
+  Demo Balance: ₹10,000
+</div>
+
+<div class="chart">
+  📈 Demo Chart (Touch to set SL / Target)
+</div>
+
+<div class="trade-panel">
+  <div class="row">
+    <button class="buy">BUY</button>
+    <button class="sell">SELL</button>
+  </div>
+  <div class="row">
+    <button>CALL</button>
+    <button>PUT</button>
+  </div>
+</div>
+
+<div class="info">
+  ⚠️ This is 100% Demo Trading. No real money involved.
+</div>
+
+</body>
+</html>
