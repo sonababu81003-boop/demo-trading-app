@@ -6,56 +6,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{
-  margin:0;
-  font-family:Arial, sans-serif;
-  background:#0f172a;
-  color:#fff;
-}
-header{
-  background:#020617;
-  padding:14px;
-  text-align:center;
-  font-size:18px;
-  font-weight:bold;
-}
-.balance{
-  text-align:center;
-  padding:10px;
-  background:#020617;
-  color:#22c55e;
-  font-size:16px;
-}
-.price{
-  text-align:center;
-  font-size:34px;
-  margin:20px 0;
-}
-.controls{
-  display:flex;
-  gap:10px;
-  padding:10px;
-}
-button{
-  flex:1;
-  padding:14px;
-  font-size:16px;
-  border:none;
-  border-radius:8px;
-  color:#fff;
-}
-.buy{background:#16a34a;}
-.sell{background:#dc2626;}
-.log{
-  padding:10px;
-  font-size:14px;
-  color:#94a3b8;
-  text-align:center;
-}
-.lock{
-  color:#f87171;
-  font-weight:bold;
-}
+body{margin:0;font-family:Arial;background:#0f172a;color:#fff}
+header{background:#020617;padding:14px;text-align:center;font-weight:bold}
+.balance{text-align:center;padding:8px;background:#020617;color:#22c55e}
+.price{font-size:34px;text-align:center;margin:12px 0}
+.panel{display:flex;gap:8px;padding:8px}
+button{flex:1;padding:12px;border:none;border-radius:8px;color:#fff;font-size:15px}
+.buy{background:#16a34a}
+.sell{background:#dc2626}
+.info{text-align:center;font-size:14px;color:#94a3b8;margin-top:6px}
+.levels{text-align:center;margin:8px 0}
+.levels span{display:inline-block;margin:0 6px;font-size:14px}
+.hidden{display:none}
+input{padding:8px;width:80px;border-radius:6px;border:none}
+.lock{color:#f87171;font-weight:bold}
 </style>
 </head>
 
@@ -67,57 +31,85 @@ button{
 
 <div class="price" id="price">₹100.00</div>
 
-<div class="controls">
+<div class="levels">
+  <span>SL: <b id="sl">—</b></span>
+  <span>Target: <b id="target">—</b></span>
+</div>
+
+<div class="panel">
   <button class="buy" onclick="trade('BUY')">BUY</button>
   <button class="sell" onclick="trade('SELL')">SELL</button>
 </div>
 
-<div class="log" id="log">Market running...</div>
+<div class="info" id="info">
+Tap price → SL | Double-tap price → Target
+</div>
+
+<div class="panel">
+  <button onclick="toggleTyping()">⚙️ Advanced</button>
+</div>
+
+<div class="panel hidden" id="typing">
+  <input id="slInput" placeholder="SL">
+  <input id="tgInput" placeholder="Target">
+  <button onclick="setManual()">Set</button>
+</div>
 
 <script>
-let balance = 10000;
-let price = 100;
-let locked = false;
+let balance=10000, price=100, locked=false;
+let sl=null, target=null;
 
-// fake live price
 setInterval(()=>{
-  if(locked) return;
-  let move = (Math.random() - 0.5) * 2;
-  price += move;
-  if(price < 1) price = 1;
-  document.getElementById("price").innerText = "₹" + price.toFixed(2);
+ if(locked) return;
+ price += (Math.random()-0.5)*2;
+ if(price<1) price=1;
+ document.getElementById("price").innerText="₹"+price.toFixed(2);
+
+ if(sl && price<=sl){ hit("SL hit"); }
+ if(target && price>=target){ hit("Target hit"); }
 },1000);
 
 function trade(type){
-  if(locked){
-    document.getElementById("log").innerHTML =
-      "<span class='lock'>Balance zero. Demo locked.</span>";
-    return;
-  }
+ if(locked){ log("Demo locked"); return;}
+ let win=Math.random()>0.5;
+ let amt=Math.floor(Math.random()*400)+200;
+ balance += win?amt:-amt;
+ log(type+" "+(win?"WIN +":"LOSS -")+"₹"+amt);
+ if(balance<=0){balance=0;locked=true;log("Balance finished");}
+ update();
+}
 
-  // random win / loss
-  let win = Math.random() > 0.5;
-  let amount = Math.floor(Math.random()*500)+200;
+function hit(msg){
+ log(msg);
+ sl=null; target=null;
+ updateLevels();
+}
 
-  if(win){
-    balance += amount;
-    document.getElementById("log").innerText =
-      type + " WIN +₹" + amount;
-  }else{
-    balance -= amount;
-    document.getElementById("log").innerText =
-      type + " LOSS -₹" + amount;
-  }
+function update(){
+ document.getElementById("balance").innerText="Demo Balance: ₹"+balance;
+}
 
-  if(balance <= 0){
-    balance = 0;
-    locked = true;
-    document.getElementById("log").innerHTML =
-      "<span class='lock'>Demo balance finished. Invite friends to unlock.</span>";
-  }
+function log(t){document.getElementById("info").innerText=t;}
 
-  document.getElementById("balance").innerText =
-    "Demo Balance: ₹" + balance;
+function updateLevels(){
+ document.getElementById("sl").innerText=sl??"—";
+ document.getElementById("target").innerText=target??"—";
+}
+
+document.getElementById("price").onclick=()=>{
+ sl=price-2; updateLevels(); log("SL set by touch");
+}
+document.getElementById("price").ondblclick=()=>{
+ target=price+2; updateLevels(); log("Target set by touch");
+}
+
+function toggleTyping(){
+ document.getElementById("typing").classList.toggle("hidden");
+}
+function setManual(){
+ sl=parseFloat(slInput.value)||sl;
+ target=parseFloat(tgInput.value)||target;
+ updateLevels(); log("Levels set manually");
 }
 </script>
 
