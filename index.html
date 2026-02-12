@@ -2,35 +2,34 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Demo Trading Pro</title>
+<title>Demo Trading Pro - Candle Mode</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body{margin:0;font-family:Arial;background:#0f172a;color:white;text-align:center}
 header{background:#020617;padding:14px;font-weight:bold}
-.balance{padding:10px;font-size:18px;color:#22c55e}
-.price{font-size:28px;margin:6px}
-canvas{background:#111827;margin-top:10px}
-.timer{font-size:16px;margin:5px;color:#facc15}
-button{padding:10px 14px;margin:5px;border:none;border-radius:6px;color:white;cursor:pointer}
+.balance{padding:8px;font-size:16px;color:#22c55e}
+.price{font-size:22px;margin:6px}
+canvas{background:#111827;margin-top:10px;border-radius:6px}
+.timer{font-size:14px;margin:5px;color:#facc15}
+button{padding:8px 12px;margin:4px;border:none;border-radius:6px;color:white;cursor:pointer}
 .buy{background:#16a34a}
 .sell{background:#dc2626}
-.message{margin-top:8px;font-size:14px}
+.message{margin-top:6px;font-size:14px}
 .profit{color:#22c55e}
 .loss{color:#ef4444}
-.history{margin-top:10px;padding:8px;background:#020617;font-size:13px}
-.tradeItem{margin:3px 0}
+.history{margin-top:8px;padding:6px;background:#020617;font-size:12px}
+.tradeItem{margin:2px 0}
 </style>
 </head>
 
 <body>
 
-<header>📊 DEMO TRADING PRO - CHART MODE</header>
+<header>📊 DEMO TRADING PRO - CANDLE MODE</header>
 
 <div class="balance" id="balance">Demo Balance: ₹10000</div>
 <div class="price" id="price">₹100.00</div>
 
-<canvas id="chart" width="350" height="180"></canvas>
+<canvas id="chart" width="350" height="200"></canvas>
 
 <div class="timer" id="timer"></div>
 
@@ -47,45 +46,54 @@ button{padding:10px 14px;margin:5px;border:none;border-radius:6px;color:white;cu
 <script>
 let balance=10000;
 let price=100;
+let candles=[];
 let trades=[];
 let currentTrade=null;
 let countdownInterval=null;
 
-const ctx=document.getElementById('chart').getContext('2d');
-let priceData=[price];
+const canvas=document.getElementById("chart");
+const ctx=canvas.getContext("2d");
 
-const chart=new Chart(ctx,{
- type:'line',
- data:{
-  labels:priceData.map((_,i)=>i),
-  datasets:[{
-   data:priceData,
-   borderColor:'#22c55e',
-   borderWidth:2,
-   tension:0.3,
-   pointRadius:0
-  }]
- },
- options:{
-  animation:false,
-  scales:{x:{display:false},y:{display:false}},
-  plugins:{legend:{display:false}}
- }
-});
+function drawCandles(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+
+ let max=Math.max(...candles.map(c=>c.high));
+ let min=Math.min(...candles.map(c=>c.low));
+ let range=max-min;
+
+ candles.forEach((c,i)=>{
+   let x=i*12+10;
+   let openY=canvas.height-((c.open-min)/range)*canvas.height;
+   let closeY=canvas.height-((c.close-min)/range)*canvas.height;
+   let highY=canvas.height-((c.high-min)/range)*canvas.height;
+   let lowY=canvas.height-((c.low-min)/range)*canvas.height;
+
+   ctx.strokeStyle=c.close>=c.open?"#22c55e":"#ef4444";
+   ctx.fillStyle=ctx.strokeStyle;
+
+   ctx.beginPath();
+   ctx.moveTo(x+3,highY);
+   ctx.lineTo(x+3,lowY);
+   ctx.stroke();
+
+   ctx.fillRect(x,Math.min(openY,closeY),6,Math.abs(closeY-openY)||2);
+ });
+}
 
 setInterval(()=>{
- price+=(Math.random()-0.5)*2;
+ let open=price;
+ price+=(Math.random()-0.5)*4;
  if(price<1) price=1;
+ let close=price;
+ let high=Math.max(open,close)+Math.random()*2;
+ let low=Math.min(open,close)-Math.random()*2;
+
+ candles.push({open,close,high,low});
+ if(candles.length>25) candles.shift();
 
  document.getElementById("price").innerText="₹"+price.toFixed(2);
 
- priceData.push(price);
- if(priceData.length>30) priceData.shift();
-
- chart.data.labels=priceData.map((_,i)=>i);
- chart.data.datasets[0].data=priceData;
- chart.update();
-
+ drawCandles();
  checkSLTarget();
 },1000);
 
@@ -98,13 +106,11 @@ function startTrade(type){
  currentTrade={
   type:type,
   entry:price,
-  sl:type==="BUY"?price-1:price+1,
-  target:type==="BUY"?price+1:price-1
+  sl:type==="BUY"?price-1.5:price+1.5,
+  target:type==="BUY"?price+1.5:price-1.5
  };
 
- document.getElementById("message").innerText=
- type+" @ ₹"+price.toFixed(2);
-
+ document.getElementById("message").innerText=type+" @ ₹"+price.toFixed(2);
  startTimer(5);
 }
 
@@ -139,8 +145,7 @@ function checkSLTarget(){
 function closeTrade(reason){
  if(!currentTrade) return;
 
- let exit=price;
- let pnl=currentTrade.type==="BUY"?(exit-currentTrade.entry):(currentTrade.entry-exit);
+ let pnl=currentTrade.type==="BUY"?(price-currentTrade.entry):(currentTrade.entry-price);
  pnl=Math.round(pnl*100);
  balance+=pnl;
 
