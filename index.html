@@ -2,13 +2,14 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Demo Trading Pro - Candle Mode</title>
+<title>Demo Trading Pro - Advanced Mode</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body{margin:0;font-family:Arial;background:#0f172a;color:white;text-align:center}
 header{background:#020617;padding:14px;font-weight:bold}
-.balance{padding:8px;font-size:16px;color:#22c55e}
-.price{font-size:22px;margin:6px}
+.balance{padding:8px;font-size:15px;color:#22c55e}
+.price{font-size:20px;margin:6px}
+select{padding:6px;margin:5px;border-radius:5px}
 canvas{background:#111827;margin-top:10px;border-radius:6px}
 .timer{font-size:14px;margin:5px;color:#facc15}
 button{padding:8px 12px;margin:4px;border:none;border-radius:6px;color:white;cursor:pointer}
@@ -24,9 +25,16 @@ button{padding:8px 12px;margin:4px;border:none;border-radius:6px;color:white;cur
 
 <body>
 
-<header>📊 DEMO TRADING PRO - CANDLE MODE</header>
+<header>📊 DEMO TRADING PRO - INDEX MODE</header>
 
 <div class="balance" id="balance">Demo Balance: ₹10000</div>
+
+<select id="indexSelect" onchange="changeIndex()">
+<option value="nifty">NIFTY</option>
+<option value="banknifty">BANKNIFTY</option>
+<option value="crude">CRUDE OIL</option>
+</select>
+
 <div class="price" id="price">₹100.00</div>
 
 <canvas id="chart" width="350" height="200"></canvas>
@@ -46,6 +54,7 @@ button{padding:8px 12px;margin:4px;border:none;border-radius:6px;color:white;cur
 <script>
 let balance=10000;
 let price=100;
+let volatility=2;
 let candles=[];
 let trades=[];
 let currentTrade=null;
@@ -54,8 +63,29 @@ let countdownInterval=null;
 const canvas=document.getElementById("chart");
 const ctx=canvas.getContext("2d");
 
+function changeIndex(){
+ let index=document.getElementById("indexSelect").value;
+
+ if(index==="nifty"){
+  price=18000;
+  volatility=10;
+ }
+ if(index==="banknifty"){
+  price=42000;
+  volatility=20;
+ }
+ if(index==="crude"){
+  price=6000;
+  volatility=15;
+ }
+
+ candles=[];
+ document.getElementById("message").innerText="Switched to "+index.toUpperCase();
+}
+
 function drawCandles(){
  ctx.clearRect(0,0,canvas.width,canvas.height);
+ if(candles.length<2) return;
 
  let max=Math.max(...candles.map(c=>c.high));
  let min=Math.min(...candles.map(c=>c.low));
@@ -82,11 +112,11 @@ function drawCandles(){
 
 setInterval(()=>{
  let open=price;
- price+=(Math.random()-0.5)*4;
+ price+=(Math.random()-0.5)*volatility;
  if(price<1) price=1;
  let close=price;
- let high=Math.max(open,close)+Math.random()*2;
- let low=Math.min(open,close)-Math.random()*2;
+ let high=Math.max(open,close)+Math.random()*volatility;
+ let low=Math.min(open,close)-Math.random()*volatility;
 
  candles.push({open,close,high,low});
  if(candles.length>25) candles.shift();
@@ -106,11 +136,13 @@ function startTrade(type){
  currentTrade={
   type:type,
   entry:price,
-  sl:type==="BUY"?price-1.5:price+1.5,
-  target:type==="BUY"?price+1.5:price-1.5
+  sl:type==="BUY"?price-volatility:price+volatility,
+  target:type==="BUY"?price+volatility:price-volatility
  };
 
- document.getElementById("message").innerText=type+" @ ₹"+price.toFixed(2);
+ document.getElementById("message").innerText=
+ type+" @ ₹"+price.toFixed(2)+" | SL ₹"+currentTrade.sl.toFixed(2)+" | Target ₹"+currentTrade.target.toFixed(2);
+
  startTimer(5);
 }
 
@@ -146,7 +178,7 @@ function closeTrade(reason){
  if(!currentTrade) return;
 
  let pnl=currentTrade.type==="BUY"?(price-currentTrade.entry):(currentTrade.entry-price);
- pnl=Math.round(pnl*100);
+ pnl=Math.round(pnl);
  balance+=pnl;
 
  let text=currentTrade.type+" "+(pnl>=0?"WIN +":"LOSS ")+"₹"+Math.abs(pnl)+" ("+reason+")";
