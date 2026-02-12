@@ -5,60 +5,20 @@
 <title>Demo Trading Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#0f172a;
-  color:white;
-  text-align:center;
-}
-header{
-  background:#020617;
-  padding:14px;
-  font-weight:bold;
-  font-size:18px;
-}
-.balance{
-  padding:10px;
-  font-size:18px;
-  color:#22c55e;
-}
-.price{
-  font-size:34px;
-  margin:10px;
-}
-button{
-  padding:12px 16px;
-  margin:6px;
-  border:none;
-  border-radius:8px;
-  font-size:15px;
-  color:white;
-  cursor:pointer;
-}
-.buy{background:#16a34a;}
-.sell{background:#dc2626;}
-.invite{background:#2563eb;}
-.lock{color:#f87171;font-weight:bold;}
-.message{
-  font-size:15px;
-  margin-top:8px;
-}
-.profit{color:#22c55e;}
-.loss{color:#ef4444;}
-.history{
-  margin-top:15px;
-  padding:10px;
-  background:#020617;
-  font-size:14px;
-}
-.history h3{
-  margin:5px 0;
-}
-.tradeItem{
-  margin:4px 0;
-}
-.hidden{display:none;}
+body{margin:0;font-family:Arial;background:#0f172a;color:white;text-align:center}
+header{background:#020617;padding:14px;font-weight:bold}
+.balance{padding:10px;font-size:18px;color:#22c55e}
+.price{font-size:36px;margin:10px}
+button{padding:12px 16px;margin:6px;border:none;border-radius:8px;font-size:15px;color:white;cursor:pointer}
+.buy{background:#16a34a}
+.sell{background:#dc2626}
+.message{margin-top:8px;font-size:15px}
+.profit{color:#22c55e}
+.loss{color:#ef4444}
+.history{margin-top:15px;padding:10px;background:#020617;font-size:14px}
+.tradeItem{margin:4px 0}
+.hidden{display:none}
+.lock{color:#f87171;font-weight:bold}
 </style>
 </head>
 
@@ -69,63 +29,72 @@ button{
 <div class="balance" id="balance">Demo Balance: ₹10000</div>
 <div class="price" id="price">₹100.00</div>
 
-<button class="buy" onclick="trade('BUY')">BUY</button>
-<button class="sell" onclick="trade('SELL')">SELL</button>
+<button class="buy" onclick="startTrade('BUY')">BUY</button>
+<button class="sell" onclick="startTrade('SELL')">SELL</button>
 
 <div id="message" class="message">Market Running...</div>
 
-<div id="inviteSection" class="hidden">
-  <p class="lock">Balance Finished!</p>
-  <button class="invite" onclick="invite()">Invite Friend (Earn Demo)</button>
-</div>
-
 <div class="history">
-  <h3>Last Trades</h3>
-  <div id="tradeHistory"></div>
+<h3>Last Trades</h3>
+<div id="tradeHistory"></div>
 </div>
 
 <script>
 let balance=10000;
 let price=100;
-let locked=false;
-let inviteCount=0;
 let trades=[];
+let currentTrade=null;
 
 setInterval(()=>{
-  if(locked) return;
   price += (Math.random()-0.5)*2;
   if(price<1) price=1;
   document.getElementById("price").innerText="₹"+price.toFixed(2);
 },1000);
 
-function trade(type){
- if(locked){
-   document.getElementById("message").innerHTML="<span class='lock'>Balance Zero</span>";
+function startTrade(type){
+ if(currentTrade){
+   document.getElementById("message").innerText="Trade already running...";
    return;
  }
 
- let win=Math.random()>0.5;
- let amt=Math.floor(Math.random()*400)+200;
+ currentTrade={
+   type:type,
+   entry:price
+ };
 
- balance += win?amt:-amt;
+ document.getElementById("message").innerText=type+" Entered @ ₹"+price.toFixed(2);
 
- let msg=type+" "+(win?"WIN +":"LOSS -")+"₹"+amt;
+ setTimeout(closeTrade,5000); // auto close after 5 sec
+}
 
- document.getElementById("message").innerText=msg;
- document.getElementById("message").className=
-   "message "+(win?"profit":"loss");
+function closeTrade(){
+ if(!currentTrade) return;
 
- trades.unshift(msg);
+ let exit=price;
+ let pnl;
+
+ if(currentTrade.type==="BUY"){
+   pnl=(exit-currentTrade.entry)*100;
+ }else{
+   pnl=(currentTrade.entry-exit)*100;
+ }
+
+ pnl=Math.round(pnl);
+
+ balance+=pnl;
+
+ let resultText=currentTrade.type+" "+(pnl>=0?"WIN +":"LOSS ")+"₹"+Math.abs(pnl);
+
+ document.getElementById("message").innerText=resultText;
+ document.getElementById("message").className="message "+(pnl>=0?"profit":"loss");
+
+ trades.unshift(resultText);
  if(trades.length>5) trades.pop();
  updateHistory();
 
- if(balance<=0){
-   balance=0;
-   locked=true;
-   document.getElementById("inviteSection").classList.remove("hidden");
- }
-
  updateBalance();
+
+ currentTrade=null;
 }
 
 function updateBalance(){
@@ -138,24 +107,6 @@ function updateHistory(){
    html+="<div class='tradeItem'>"+t+"</div>";
  });
  document.getElementById("tradeHistory").innerHTML=html;
-}
-
-function invite(){
- inviteCount++;
- let reward;
- if(inviteCount==1) reward=5000;
- else if(inviteCount==2) reward=4000;
- else if(inviteCount==3) reward=3000;
- else reward=2000;
-
- balance+=reward;
- locked=false;
-
- document.getElementById("inviteSection").classList.add("hidden");
- document.getElementById("message").innerText="Referral Reward +₹"+reward;
- document.getElementById("message").className="message profit";
-
- updateBalance();
 }
 </script>
 
