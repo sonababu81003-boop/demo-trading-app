@@ -51,7 +51,7 @@ setInterval(()=>{
   if(price<1) price=1;
   document.getElementById("price").innerText="₹"+price.toFixed(2);
 
-  checkSL();
+  checkSLTarget();
 },1000);
 
 function startTrade(type){
@@ -63,10 +63,13 @@ function startTrade(type){
  currentTrade={
    type:type,
    entry:price,
-   sl: type==="BUY" ? price-1 : price+1
+   sl: type==="BUY" ? price-1 : price+1,
+   target: type==="BUY" ? price+1 : price-1
  };
 
- document.getElementById("message").innerText=type+" Entered @ ₹"+price.toFixed(2);
+ document.getElementById("message").innerText=
+   type+" Entered @ ₹"+price.toFixed(2)+" | SL ₹"+currentTrade.sl.toFixed(2)+" | Target ₹"+currentTrade.target.toFixed(2);
+
  startTimer(5);
 }
 
@@ -80,22 +83,34 @@ function startTimer(seconds){
 
    if(timeLeft<=0){
      clearInterval(countdownInterval);
-     closeTrade("TIME");
+     closeTrade("TIME UP");
    }
  },1000);
 }
 
-function checkSL(){
+function checkSLTarget(){
  if(!currentTrade) return;
 
- if(currentTrade.type==="BUY" && price<=currentTrade.sl){
-   clearInterval(countdownInterval);
-   closeTrade("SL HIT");
+ if(currentTrade.type==="BUY"){
+   if(price<=currentTrade.sl){
+     clearInterval(countdownInterval);
+     closeTrade("SL HIT");
+   }
+   if(price>=currentTrade.target){
+     clearInterval(countdownInterval);
+     closeTrade("TARGET HIT");
+   }
  }
 
- if(currentTrade.type==="SELL" && price>=currentTrade.sl){
-   clearInterval(countdownInterval);
-   closeTrade("SL HIT");
+ if(currentTrade.type==="SELL"){
+   if(price>=currentTrade.sl){
+     clearInterval(countdownInterval);
+     closeTrade("SL HIT");
+   }
+   if(price<=currentTrade.target){
+     clearInterval(countdownInterval);
+     closeTrade("TARGET HIT");
+   }
  }
 }
 
