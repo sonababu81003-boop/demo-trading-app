@@ -4,29 +4,34 @@
 <meta charset="UTF-8">
 <title>Demo Trading Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body{margin:0;font-family:Arial;background:#0f172a;color:white;text-align:center}
 header{background:#020617;padding:14px;font-weight:bold}
 .balance{padding:10px;font-size:18px;color:#22c55e}
-.price{font-size:36px;margin:10px}
-.timer{font-size:18px;margin:5px;color:#facc15}
-button{padding:12px 16px;margin:6px;border:none;border-radius:8px;font-size:15px;color:white;cursor:pointer}
+.price{font-size:28px;margin:6px}
+canvas{background:#111827;margin-top:10px}
+.timer{font-size:16px;margin:5px;color:#facc15}
+button{padding:10px 14px;margin:5px;border:none;border-radius:6px;color:white;cursor:pointer}
 .buy{background:#16a34a}
 .sell{background:#dc2626}
-.message{margin-top:8px;font-size:15px}
+.message{margin-top:8px;font-size:14px}
 .profit{color:#22c55e}
 .loss{color:#ef4444}
-.history{margin-top:15px;padding:10px;background:#020617;font-size:14px}
-.tradeItem{margin:4px 0}
+.history{margin-top:10px;padding:8px;background:#020617;font-size:13px}
+.tradeItem{margin:3px 0}
 </style>
 </head>
 
 <body>
 
-<header>📊 DEMO TRADING PRO</header>
+<header>📊 DEMO TRADING PRO - CHART MODE</header>
 
 <div class="balance" id="balance">Demo Balance: ₹10000</div>
 <div class="price" id="price">₹100.00</div>
+
+<canvas id="chart" width="350" height="180"></canvas>
+
 <div class="timer" id="timer"></div>
 
 <button class="buy" onclick="startTrade('BUY')">BUY</button>
@@ -46,45 +51,74 @@ let trades=[];
 let currentTrade=null;
 let countdownInterval=null;
 
-setInterval(()=>{
-  price += (Math.random()-0.5)*2;
-  if(price<1) price=1;
-  document.getElementById("price").innerText="₹"+price.toFixed(2);
+const ctx=document.getElementById('chart').getContext('2d');
+let priceData=[price];
 
-  checkSLTarget();
+const chart=new Chart(ctx,{
+ type:'line',
+ data:{
+  labels:priceData.map((_,i)=>i),
+  datasets:[{
+   data:priceData,
+   borderColor:'#22c55e',
+   borderWidth:2,
+   tension:0.3,
+   pointRadius:0
+  }]
+ },
+ options:{
+  animation:false,
+  scales:{x:{display:false},y:{display:false}},
+  plugins:{legend:{display:false}}
+ }
+});
+
+setInterval(()=>{
+ price+=(Math.random()-0.5)*2;
+ if(price<1) price=1;
+
+ document.getElementById("price").innerText="₹"+price.toFixed(2);
+
+ priceData.push(price);
+ if(priceData.length>30) priceData.shift();
+
+ chart.data.labels=priceData.map((_,i)=>i);
+ chart.data.datasets[0].data=priceData;
+ chart.update();
+
+ checkSLTarget();
 },1000);
 
 function startTrade(type){
  if(currentTrade){
-   document.getElementById("message").innerText="Trade already running...";
-   return;
+  document.getElementById("message").innerText="Trade running...";
+  return;
  }
 
  currentTrade={
-   type:type,
-   entry:price,
-   sl: type==="BUY" ? price-1 : price+1,
-   target: type==="BUY" ? price+1 : price-1
+  type:type,
+  entry:price,
+  sl:type==="BUY"?price-1:price+1,
+  target:type==="BUY"?price+1:price-1
  };
 
  document.getElementById("message").innerText=
-   type+" Entered @ ₹"+price.toFixed(2)+" | SL ₹"+currentTrade.sl.toFixed(2)+" | Target ₹"+currentTrade.target.toFixed(2);
+ type+" @ ₹"+price.toFixed(2);
 
  startTimer(5);
 }
 
-function startTimer(seconds){
- let timeLeft=seconds;
- document.getElementById("timer").innerText="Time Left: "+timeLeft+"s";
+function startTimer(sec){
+ let t=sec;
+ document.getElementById("timer").innerText="Time: "+t+"s";
 
  countdownInterval=setInterval(()=>{
-   timeLeft--;
-   document.getElementById("timer").innerText="Time Left: "+timeLeft+"s";
-
-   if(timeLeft<=0){
-     clearInterval(countdownInterval);
-     closeTrade("TIME UP");
-   }
+  t--;
+  document.getElementById("timer").innerText="Time: "+t+"s";
+  if(t<=0){
+   clearInterval(countdownInterval);
+   closeTrade("TIME");
+  }
  },1000);
 }
 
@@ -92,25 +126,13 @@ function checkSLTarget(){
  if(!currentTrade) return;
 
  if(currentTrade.type==="BUY"){
-   if(price<=currentTrade.sl){
-     clearInterval(countdownInterval);
-     closeTrade("SL HIT");
-   }
-   if(price>=currentTrade.target){
-     clearInterval(countdownInterval);
-     closeTrade("TARGET HIT");
-   }
+  if(price<=currentTrade.sl){clearInterval(countdownInterval);closeTrade("SL");}
+  if(price>=currentTrade.target){clearInterval(countdownInterval);closeTrade("TARGET");}
  }
 
  if(currentTrade.type==="SELL"){
-   if(price>=currentTrade.sl){
-     clearInterval(countdownInterval);
-     closeTrade("SL HIT");
-   }
-   if(price<=currentTrade.target){
-     clearInterval(countdownInterval);
-     closeTrade("TARGET HIT");
-   }
+  if(price>=currentTrade.sl){clearInterval(countdownInterval);closeTrade("SL");}
+  if(price<=currentTrade.target){clearInterval(countdownInterval);closeTrade("TARGET");}
  }
 }
 
@@ -118,23 +140,16 @@ function closeTrade(reason){
  if(!currentTrade) return;
 
  let exit=price;
- let pnl;
-
- if(currentTrade.type==="BUY"){
-   pnl=(exit-currentTrade.entry)*100;
- }else{
-   pnl=(currentTrade.entry-exit)*100;
- }
-
- pnl=Math.round(pnl);
+ let pnl=currentTrade.type==="BUY"?(exit-currentTrade.entry):(currentTrade.entry-exit);
+ pnl=Math.round(pnl*100);
  balance+=pnl;
 
- let resultText=currentTrade.type+" "+(pnl>=0?"WIN +":"LOSS ")+"₹"+Math.abs(pnl)+" ("+reason+")";
+ let text=currentTrade.type+" "+(pnl>=0?"WIN +":"LOSS ")+"₹"+Math.abs(pnl)+" ("+reason+")";
 
- document.getElementById("message").innerText=resultText;
+ document.getElementById("message").innerText=text;
  document.getElementById("message").className="message "+(pnl>=0?"profit":"loss");
 
- trades.unshift(resultText);
+ trades.unshift(text);
  if(trades.length>5) trades.pop();
  updateHistory();
  updateBalance();
@@ -149,9 +164,7 @@ function updateBalance(){
 
 function updateHistory(){
  let html="";
- trades.forEach(t=>{
-   html+="<div class='tradeItem'>"+t+"</div>";
- });
+ trades.forEach(t=>{html+="<div class='tradeItem'>"+t+"</div>";});
  document.getElementById("tradeHistory").innerHTML=html;
 }
 </script>
