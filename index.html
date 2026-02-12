@@ -2,8 +2,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Demo Trading Pro - Advanced Mode</title>
+<title>Demo Trading Pro - Equity Mode</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body{margin:0;font-family:Arial;background:#0f172a;color:white;text-align:center}
 header{background:#020617;padding:14px;font-weight:bold}
@@ -20,12 +21,13 @@ button{padding:8px 12px;margin:4px;border:none;border-radius:6px;color:white;cur
 .loss{color:#ef4444}
 .history{margin-top:8px;padding:6px;background:#020617;font-size:12px}
 .tradeItem{margin:2px 0}
+.sectionTitle{margin-top:15px;font-size:14px;color:#94a3b8}
 </style>
 </head>
 
 <body>
 
-<header>📊 DEMO TRADING PRO - INDEX MODE</header>
+<header>📊 DEMO TRADING PRO - EQUITY MODE</header>
 
 <div class="balance" id="balance">Demo Balance: ₹10000</div>
 
@@ -37,7 +39,11 @@ button{padding:8px 12px;margin:4px;border:none;border-radius:6px;color:white;cur
 
 <div class="price" id="price">₹100.00</div>
 
+<div class="sectionTitle">Market Chart</div>
 <canvas id="chart" width="350" height="200"></canvas>
+
+<div class="sectionTitle">Equity Curve</div>
+<canvas id="equityChart" width="350" height="150"></canvas>
 
 <div class="timer" id="timer"></div>
 
@@ -53,85 +59,72 @@ button{padding:8px 12px;margin:4px;border:none;border-radius:6px;color:white;cur
 
 <script>
 let balance=10000;
-let price=100;
-let volatility=2;
+let equityData=[balance];
+let price=18000;
+let volatility=10;
 let candles=[];
 let trades=[];
 let currentTrade=null;
 let countdownInterval=null;
 
-const canvas=document.getElementById("chart");
-const ctx=canvas.getContext("2d");
+const ctx=document.getElementById("chart").getContext("2d");
+const equityCtx=document.getElementById("equityChart").getContext("2d");
+
+const equityChart=new Chart(equityCtx,{
+ type:'line',
+ data:{
+  labels:equityData.map((_,i)=>i),
+  datasets:[{
+   data:equityData,
+   borderColor:'#22c55e',
+   borderWidth:2,
+   tension:0.3,
+   pointRadius:0
+  }]
+ },
+ options:{
+  animation:false,
+  scales:{x:{display:false},y:{display:false}},
+  plugins:{legend:{display:false}}
+ }
+});
 
 function changeIndex(){
  let index=document.getElementById("indexSelect").value;
 
- if(index==="nifty"){
-  price=18000;
-  volatility=10;
- }
- if(index==="banknifty"){
-  price=42000;
-  volatility=20;
- }
- if(index==="crude"){
-  price=6000;
-  volatility=15;
- }
+ if(index==="nifty"){price=18000;volatility=10;}
+ if(index==="banknifty"){price=42000;volatility=20;}
+ if(index==="crude"){price=6000;volatility=15;}
 
  candles=[];
  document.getElementById("message").innerText="Switched to "+index.toUpperCase();
 }
 
-function drawCandles(){
- ctx.clearRect(0,0,canvas.width,canvas.height);
- if(candles.length<2) return;
-
- let max=Math.max(...candles.map(c=>c.high));
- let min=Math.min(...candles.map(c=>c.low));
- let range=max-min;
-
- candles.forEach((c,i)=>{
-   let x=i*12+10;
-   let openY=canvas.height-((c.open-min)/range)*canvas.height;
-   let closeY=canvas.height-((c.close-min)/range)*canvas.height;
-   let highY=canvas.height-((c.high-min)/range)*canvas.height;
-   let lowY=canvas.height-((c.low-min)/range)*canvas.height;
-
-   ctx.strokeStyle=c.close>=c.open?"#22c55e":"#ef4444";
-   ctx.fillStyle=ctx.strokeStyle;
-
-   ctx.beginPath();
-   ctx.moveTo(x+3,highY);
-   ctx.lineTo(x+3,lowY);
-   ctx.stroke();
-
-   ctx.fillRect(x,Math.min(openY,closeY),6,Math.abs(closeY-openY)||2);
- });
-}
+const marketChart=new Chart(ctx,{
+ type:'line',
+ data:{labels:[],datasets:[{data:[],borderColor:'#38bdf8',borderWidth:2,tension:0.3,pointRadius:0}]},
+ options:{animation:false,scales:{x:{display:false},y:{display:false}},plugins:{legend:{display:false}}}
+});
 
 setInterval(()=>{
- let open=price;
  price+=(Math.random()-0.5)*volatility;
  if(price<1) price=1;
- let close=price;
- let high=Math.max(open,close)+Math.random()*volatility;
- let low=Math.min(open,close)-Math.random()*volatility;
 
- candles.push({open,close,high,low});
- if(candles.length>25) candles.shift();
+ marketChart.data.labels.push('');
+ marketChart.data.datasets[0].data.push(price);
+ if(marketChart.data.datasets[0].data.length>30){
+  marketChart.data.datasets[0].data.shift();
+  marketChart.data.labels.shift();
+ }
+ marketChart.update();
 
  document.getElementById("price").innerText="₹"+price.toFixed(2);
 
- drawCandles();
  checkSLTarget();
 },1000);
 
 function startTrade(type){
- if(currentTrade){
-  document.getElementById("message").innerText="Trade running...";
-  return;
- }
+ if(currentTrade){return;}
 
  currentTrade={
   type:type,
@@ -139,9 +132,6 @@ function startTrade(type){
   sl:type==="BUY"?price-volatility:price+volatility,
   target:type==="BUY"?price+volatility:price-volatility
  };
-
- document.getElementById("message").innerText=
- type+" @ ₹"+price.toFixed(2)+" | SL ₹"+currentTrade.sl.toFixed(2)+" | Target ₹"+currentTrade.target.toFixed(2);
 
  startTimer(5);
 }
@@ -167,7 +157,6 @@ function checkSLTarget(){
   if(price<=currentTrade.sl){clearInterval(countdownInterval);closeTrade("SL");}
   if(price>=currentTrade.target){clearInterval(countdownInterval);closeTrade("TARGET");}
  }
-
  if(currentTrade.type==="SELL"){
   if(price>=currentTrade.sl){clearInterval(countdownInterval);closeTrade("SL");}
   if(price<=currentTrade.target){clearInterval(countdownInterval);closeTrade("TARGET");}
@@ -181,10 +170,12 @@ function closeTrade(reason){
  pnl=Math.round(pnl);
  balance+=pnl;
 
- let text=currentTrade.type+" "+(pnl>=0?"WIN +":"LOSS ")+"₹"+Math.abs(pnl)+" ("+reason+")";
+ equityData.push(balance);
+ equityChart.data.labels.push('');
+ equityChart.data.datasets[0].data=equityData;
+ equityChart.update();
 
- document.getElementById("message").innerText=text;
- document.getElementById("message").className="message "+(pnl>=0?"profit":"loss");
+ let text=currentTrade.type+" "+(pnl>=0?"WIN +":"LOSS ")+"₹"+Math.abs(pnl)+" ("+reason+")";
 
  trades.unshift(text);
  if(trades.length>5) trades.pop();
