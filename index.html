@@ -1,91 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Demo Trading Pro - Equity Mode</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- PWA Manifest -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#020617">
-
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body{margin:0;font-family:Arial;background:#0f172a;color:white;text-align:center}
-header{background:#020617;padding:14px;font-weight:bold}
-.balance{padding:8px;font-size:15px;color:#22c55e}
-.price{font-size:20px;margin:6px}
-select{padding:6px;margin:5px;border-radius:5px}
-canvas{background:#111827;margin-top:10px;border-radius:6px}
-.timer{font-size:14px;margin:5px;color:#facc15}
-button{padding:8px 12px;margin:4px;border:none;border-radius:6px;color:white;cursor:pointer}
-.buy{background:#16a34a}
-.sell{background:#dc2626}
-.message{margin-top:6px;font-size:14px}
-.profit{color:#22c55e}
-.loss{color:#ef4444}
-.history{margin-top:8px;padding:6px;background:#020617;font-size:12px}
-.tradeItem{margin:2px 0}
-.sectionTitle{margin-top:15px;font-size:14px;color:#94a3b8}
-</style>
-</head>
-
-<body>
-
-<header>📊 DEMO TRADING PRO - EQUITY MODE</header>
-
-<div class="balance" id="balance">Demo Balance: ₹10000</div>
-
-<div class="price" id="price">₹18000</div>
-
-<div class="sectionTitle">Equity Curve</div>
-<canvas id="equityChart" width="350" height="150"></canvas>
-
-<button class="buy" onclick="trade('BUY')">BUY</button>
-<button class="sell" onclick="trade('SELL')">SELL</button>
-
-<div id="message" class="message">Market Running...</div>
-
-<script>
-let balance=10000;
-let price=18000;
-let equity=[balance];
-
-const ctx=document.getElementById("equityChart").getContext("2d");
-
-const chart=new Chart(ctx,{
- type:'line',
- data:{
-  labels:equity.map((_,i)=>i),
-  datasets:[{
-   data:equity,
-   borderColor:'#22c55e',
-   borderWidth:2,
-   tension:0.3,
-   pointRadius:0
-  }]
- },
- options:{
-  animation:false,
-  scales:{x:{display:false},y:{display:false}},
-  plugins:{legend:{display:false}}
- }
-});
-
-setInterval(()=>{
- price+=(Math.random()-0.5)*20;
- document.getElementById("price").innerText="₹"+price.toFixed(2);
-},1000);
-
-function trade(type){
  let pnl=Math.round((Math.random()-0.5)*500);
  balance+=pnl;
 
  equity.push(balance);
  chart.data.labels.push('');
- chart.data.datasets[0].data=equity;
+ ;
  chart.update();
 
  document.getElementById("balance").innerText="Demo Balance: ₹"+balance;
